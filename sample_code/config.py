@@ -29,8 +29,8 @@ class Config:
         self.latin_width = 16
 
         # Training procedure parameters
-        self.batch_size = 8000
-        self.no_of_batches = 5000 # How many batches to go through during training.
+        self.batch_size = 6000
+        self.no_of_batches = 8000 # How many batches to go through during training.
         self.weight_init_scaling = 2.#10. # default is 1. Set to larger values to get more variance in initial weights.
         self.optimizer = 'adadelta'
         self.lr = 2

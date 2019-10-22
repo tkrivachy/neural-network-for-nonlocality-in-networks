@@ -32,15 +32,27 @@ def target_distribution_gen(name, parameter1, parameter2):
             temp0 = [str(a),str(b),str(c)]
             temp = [a,b,c]
             ids[temp[0],temp[1],temp[2]] = ''.join(temp0)
+            cspi8 = 1/(2*np.sqrt(2))
+            cos2pi8 = (2 + np.sqrt(2))/4
+            sin2pi8 = (2 - np.sqrt(2))/4
             if m==j and n==l:
-                if m==n:
+                if n=='0':
                     if i==k:
-                        p[temp[0],temp[1],temp[2]] = 0.25-parameter2/4
+                        p[temp[0],temp[1],temp[2]] = (1 - parameter2*(cos2pi8 - sin2pi8))/16
                     if i!=k:
-                        p[temp[0],temp[1],temp[2]] = 0.25+parameter2/4
-                if m!=n:
-                    p[temp[0],temp[1],temp[2]] = 0.25
-        p = p.flatten()/4
+                        p[temp[0],temp[1],temp[2]] = (1 + parameter2*(cos2pi8 - sin2pi8))/16
+                if n=='1':
+                    if m=='0':
+                        if i==k:
+                            p[temp[0],temp[1],temp[2]] = 1/16 - cspi8 * parameter2/8
+                        if i!=k:
+                            p[temp[0],temp[1],temp[2]] = 1/16 + cspi8 * parameter2/8
+                    if m=='1':
+                        if i==k:
+                            p[temp[0],temp[1],temp[2]] = 1/16 + cspi8 * parameter2/8
+                        if i!=k:
+                            p[temp[0],temp[1],temp[2]] = 1/16 - cspi8 * parameter2/8
+        p = p.flatten()
         ids = ids.flatten()
 
     if name=="Renou-visibility":
