@@ -5,8 +5,7 @@ import matplotlib.pyplot as plt
 
 import config as cf
 from targets import target_distribution_gen_all
-from utils_nn import np_distance, np_euclidean_distance
-from run_single_gen import single_run, single_evaluation
+from utils_nn import np_distance, np_euclidean_distance, single_run, single_evaluation
 
 # Create directories for saving stuff
 if __name__ == '__main__':
