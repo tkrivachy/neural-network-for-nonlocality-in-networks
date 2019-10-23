@@ -12,8 +12,8 @@ class Config:
 
         # Define target distributions to sweep through.
         ## Set up custom target distribution generator function
-        self.target_distr_name = "Fritz-visibility" # check targets.py for possible names
-        self.param_range = np.linspace(0.5, 1, 10)
+        self.target_distr_name = "elegant-visibility" # check targets.py for possible names
+        self.param_range = np.linspace(0.5, 1, 30)
         self.which_param = 2 # Specifies whether we want to sweep through param1, a distribution parameter (not relevant sometimes, e.g. for elegant distr.), or param2, the noise parameter.
         self.other_param = 1 # Fixes other parameter, which we don't sweep through.
 
@@ -29,8 +29,8 @@ class Config:
         self.latin_width = 16
 
         # Training procedure parameters
-        self.batch_size = 6000
-        self.no_of_batches = 8000 # How many batches to go through during training.
+        self.batch_size = 8000
+        self.no_of_batches = 10000 # How many batches to go through during training.
         self.weight_init_scaling = 2.#10. # default is 1. Set to larger values to get more variance in initial weights.
         self.optimizer = 'adadelta'
         self.lr = 2
@@ -49,7 +49,7 @@ class Config:
         self.change_batch_size(self.batch_size) #updates test batch size
         self.greek_depth = 0 # set to 0 if trivial neural networks at sources
         self.greek_width = 1
-        self.activ = 'tanh' # activation for most of NN
+        self.activ = 'relu' # activation for most of NN
         self.activ2 = 'softmax' # activation for last dense layer
         self.kernel_reg = None
 
