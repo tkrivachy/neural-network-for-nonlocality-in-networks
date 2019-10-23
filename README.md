@@ -7,12 +7,12 @@ T. Kriváchy, Y. Cai, D. Cavalcanti, A. Tavakoli, N. Gisin, N. Brunner, A neural
 ## Intro
 In the paper above, we describe a generative neural network to tackle the classical causal inference problem encountered in quantum network nonlocality. The neural network basically tries to learn classical/local models for a given distribution and causal structure.
 
-![Fritz distribution distances for different visibilities.](./sweep_Fritz.png "Fritz distribution distance(p_target,p_machine) vs visibility.")
+![Going from causal structure to generative neural network.](./triangle.png "Going from causal structure to generative neural network.")
 
 ## Usage
 In sample_code, set your parameters in config.py. Then run train.py. For a first test, **just run train.py** to see training for the Fritz distribution and its noisy versions (visibility added to the singlet). You should get something like this in the figs_training_sweep directory: (should take about 15 minutes using an average CPU)
 
-![Going from causal structure to generative neural network.](./triangle.png "Going from causal structure to generative neural network.")
+![Fritz distribution distances for different visibilities.](./sweep_Fritz.png "Fritz distribution distance(p_target,p_machine) vs visibility.")
 
 Notice that the transition is around 1/sqrt(2), as expected.
 
