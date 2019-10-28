@@ -25,17 +25,18 @@ class Config:
         self.c_outputsize = 4 # Number of output bits for Charlie
 
         # Neural network parameters
-        self.latin_depth = 3
-        self.latin_width = 16
+        self.latin_depth = 5
+        self.latin_width = 30
 
         # Training procedure parameters
         self.batch_size = 8000
         self.no_of_batches = 10000 # How many batches to go through during training.
         self.weight_init_scaling = 2.#10. # default is 1. Set to larger values to get more variance in initial weights.
         self.optimizer = 'adadelta'
-        self.lr = 2
+        self.lr = 0.5
         self.decay = 0.001
         self.momentum = 0.25
+        self.loss = 'kl'
 
         # Initialize some variables
         self.euclidean_distances = np.ones_like(self.target_ids)*100

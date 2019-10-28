@@ -58,7 +58,7 @@ def target_distribution_gen(name, parameter1, parameter2):
     if name=="Renou-visibility":
         """ Info: If param_c >~ 0.886 or <~0.464, there is no classical 3-local model."""
         """ In terms of c**2: above 0.785 or below 0.215 no classical 3-local model."""
-        c = parameter1
+        c = np.sqrt(parameter1)
         v = parameter2
         p = np.array([
         -(-1 + v)**3/64.,-((-1 + v)*(1 + v)**2)/64.,((-1 + v)**2*(1 + v))/64.,((-1 + v)**2*(1 + v))/64.,-((-1 + v)*(1 + v)**2)/64.,-((-1 + v)*(1 + v)**2)/64.,((1 + v)*(1 + (-2 + 4*c**2)*v + v**2))/64.,
@@ -94,14 +94,14 @@ def target_distribution_gen(name, parameter1, parameter2):
     if name=="Renou-localnoise":
         """ Info: If param_c >~ 0.886 or <~0.464, there is no classical 3-local model."""
         """ In terms of c**2: above 0.785 or below 0.215 no classical 3-local model."""
-        param_c = parameter1
+        param_c = np.sqrt(parameter1)
         param_s = np.np.sqrt(1-param_c**2)
 
         # the si and ci functions
         param2_c = {'2':param_c, '3':param_s}
         param2_s = {'2':param_s, '3':-1*param_c}
 
-        # First create noiseless Salman distribution.
+        # First create noiseless Renou distribution.
         ids = np.zeros((4,4,4)).astype(str)
         p = np.zeros((4,4,4))
         for a,b,c in product('0123',repeat=3):
