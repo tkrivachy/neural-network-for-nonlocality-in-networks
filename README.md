@@ -42,3 +42,8 @@ In the sample code we look at the Fritz distribution for 10 different singlet vi
 * `figs_distributions`: Contains the target distributions (red dots) and the learned distributions (green squares), for each of the 10 target distributions.
 * `saved_models`: Contains final models for each of the 10 target distribution examined.
 * `saved_results`: Contains final distances for each of the 10 target distributions.
+
+## Future updates
+The core functionality of the algorithm can be found in the current sample codes. However, planned updates are:
+* Adding a function to plot the learned strategies. (flags)
+* Adding a script to fit curves to the distance data, in order to be able to extract $v^*$ and $\theta^*$ easily.
