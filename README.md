@@ -46,4 +46,4 @@ In the sample code we look at the Fritz distribution for 10 different singlet vi
 ## Future updates
 The core functionality of the algorithm can be found in the current sample codes. However, planned updates are:
 * Adding a function to plot the learned strategies. (flags)
-* Adding a script to fit curves to the distance data, in order to be able to extract v* and &theta * easily.
+* Adding a script to fit curves to the distance data, in order to be able to extract v* and \theta* easily.
