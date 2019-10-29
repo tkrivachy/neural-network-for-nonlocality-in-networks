@@ -58,7 +58,7 @@ def target_distribution_gen(name, parameter1, parameter2):
     if name=="Renou-visibility":
         """ Info: If param_c >~ 0.886 or <~0.464, there is no classical 3-local model."""
         """ In terms of c**2: above 0.785 or below 0.215 no classical 3-local model."""
-        c = np.sqrt(parameter1)
+        c = parameter1
         v = parameter2
         p = np.array([
         -(-1 + v)**3/64.,-((-1 + v)*(1 + v)**2)/64.,((-1 + v)**2*(1 + v))/64.,((-1 + v)**2*(1 + v))/64.,-((-1 + v)*(1 + v)**2)/64.,-((-1 + v)*(1 + v)**2)/64.,((1 + v)*(1 + (-2 + 4*c**2)*v + v**2))/64.,
@@ -94,14 +94,14 @@ def target_distribution_gen(name, parameter1, parameter2):
     if name=="Renou-localnoise":
         """ Info: If param_c >~ 0.886 or <~0.464, there is no classical 3-local model."""
         """ In terms of c**2: above 0.785 or below 0.215 no classical 3-local model."""
-        param_c = np.sqrt(parameter1)
+        param_c = parameter1
         param_s = np.np.sqrt(1-param_c**2)
 
         # the si and ci functions
         param2_c = {'2':param_c, '3':param_s}
         param2_s = {'2':param_s, '3':-1*param_c}
 
-        # First create noiseless Renou distribution.
+        # First create noiseless Salman distribution.
         ids = np.zeros((4,4,4)).astype(str)
         p = np.zeros((4,4,4))
         for a,b,c in product('0123',repeat=3):
@@ -184,30 +184,6 @@ def target_distribution_gen(name, parameter1, parameter2):
         p=new_values.flatten()
         ids = ids.flatten()
 
-    if name=="1-q0-localnoise":
-        ids = np.zeros((2,2,2)).astype(str)
-        for a,b,c in product('0123',repeat=3):
-            temp0 = [a,b,c]
-            temp = [int(item) for item in temp0]
-            ids[temp[0],temp[1],temp[2]] = ''.join(temp0)
-
-        p = loadmat('q0')
-        print(p)
-        # Let's add local noise.
-        new_values = np.zeros_like(p)
-        for a,b,c in product('0123',repeat=3):
-            temp0 = [a,b,c]
-            temp = [int(item) for item in temp0]
-            new_values[temp[0],temp[1],temp[2]] = (
-            parameter2**3 *                       p[temp[0],temp[1],temp[2]] +
-            parameter2**2*(1-parameter2) * 1/4  * ( np.sum(p,axis=2)[temp[0],temp[1]] + np.sum(p,axis=0)[temp[1],temp[2]] + np.sum(p,axis=1)[temp[0],temp[2]] ) +
-            parameter2*(1-parameter2)**2 * 1/16 * ( np.sum(p,axis=(1,2))[temp[0]] + np.sum(p,axis=(0,2))[temp[1]] + np.sum(p,axis=(0,1))[temp[2]] ) +
-            (1-parameter2)**3            * 1/64
-            )
-        p=new_values.flatten()
-        print(p)
-        ids = ids.flatten()
-
     if name=="classical-Gisin":
         """ Recreating a classically feasible distribution, a 64-long vector. """
         ids = np.zeros((4,4,4)).astype(str)
@@ -277,19 +253,6 @@ def target_distribution_gen(name, parameter1, parameter2):
         p_id = np.ones(shape=p.shape)
         p_id = p_id/np.sum(p_id)
         p = parameter2 * p + (1-parameter2) * p_id
-
-    if name=="E2E3":
-        """E1 = 0. param1=E2, param2 = E3"""
-        tv = {'0':-1,'1':1}
-        p = np.zeros((2,2,2))
-        ids = np.zeros((2,2,2))
-        for a,b,c in product('01',repeat=3):
-            temp0 = [a,b,c]
-            temp = [int(item) for item in temp0]
-            p[temp[0],temp[1],temp[2]] = 1/8 * (1 + (tv[a]*tv[b] + tv[b]*tv[c] + tv[c]*tv[a])*parameter1 + tv[a]*tv[b]*tv[c]*parameter2)
-            ids[temp[0],temp[1],temp[2]] = a+b+c
-        p=p.flatten()
-        ids = ids.flatten()
 
     assert (np.abs(np.sum(p)-1.0) < (1E-6)),"Improperly normalized p!"
     return p
