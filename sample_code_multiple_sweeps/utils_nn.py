@@ -166,6 +166,10 @@ def update_results(model,i):
         cf.pnn.distributions[i,:] = result
         cf.pnn.distances[i] = np_distance(result, cf.pnn.p_target)
         cf.pnn.euclidean_distances[i] = np_euclidean_distance(result, cf.pnn.p_target)
+        np.save("./saved_results/target_distributions.npy",cf.pnn.target_distributions)
+        np.save("./saved_results/distributions.npy",cf.pnn.distributions)
+        np.save("./saved_results/distances.npy",cf.pnn.distances)
+        np.save("./saved_results/euclidean_distances.npy",cf.pnn.euclidean_distances)
 
     # Plot graphs only if update is needed or at the end of the sweep (in case none of them were updated.)
     if update_needed or i==0:

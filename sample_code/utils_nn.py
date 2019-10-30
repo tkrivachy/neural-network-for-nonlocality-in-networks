@@ -56,19 +56,26 @@ def np_euclidean_distance(p,q=0):
 
 def np_distance(p,q=0):
     """ Same as the distance used in the loss function, just written for numpy arrays."""
-    #return np.sum(np.square(p-q),axis=-1)
-    #return 0.5*np.sum(np.abs(p-q),axis=-1)
-    p = np.clip(p, K.epsilon(), 1)
-    q = np.clip(q, K.epsilon(), 1)
-    return np.sum(p * np.log(np.divide(p,q)), axis=-1)
+    if cf.pnn.loss.lower() == 'l2':
+        return np.sum(np.square(p-q),axis=-1)
+    elif cf.pnn.loss.lower() == 'l1':
+        return 0.5*np.sum(np.abs(p-q),axis=-1)
+    elif cf.pnn.loss.lower() == 'kl':
+        p = np.clip(p, K.epsilon(), 1)
+        q = np.clip(q, K.epsilon(), 1)
+        return np.sum(p * np.log(np.divide(p,q)), axis=-1)
 
 def keras_distance(p,q):
     """ Distance used in loss function. """
-    #return K.sum(K.square(p-q),axis=-1)
-    #return 0.5*K.sum(K.abs(p-q), axis=-1)
-    p = K.clip(p, K.epsilon(), 1)
-    q = K.clip(q, K.epsilon(), 1)
-    return K.sum(p * K.log(p / q), axis=-1)
+    if cf.pnn.loss.lower() == 'l2':
+        return K.sum(K.square(p-q),axis=-1)
+    elif cf.pnn.loss.lower() == 'l1':
+        return 0.5*K.sum(K.abs(p-q), axis=-1)
+    elif cf.pnn.loss.lower() == 'kl':
+        p = K.clip(p, K.epsilon(), 1)
+        q = K.clip(q, K.epsilon(), 1)
+        return K.sum(p * K.log(p / q), axis=-1)
+
 
 def customLoss_distr(y_pred):
     """ Converts the output of the neural network to a probability vector.
@@ -135,3 +142,51 @@ def single_run():
     # Fit model
     model.fit_generator(generate_xy_batch(), steps_per_epoch=cf.pnn.no_of_batches, epochs=1, verbose=1, validation_data=generate_xy_batch(), validation_steps=cf.pnn.no_of_validation_batches, class_weight=None, max_queue_size=10, workers=1, use_multiprocessing=False, shuffle=False, initial_epoch=0)
     return model
+
+def update_results(model,i):
+    """ Updates plots and results if better than the one I loaded the model from in this round.
+    If I am in last sample of the sweep I will plot no matter one, so that there is at least one plot per sweep.
+    """
+    result = single_evaluation(model)
+    # Check whether update is needed based on distance of previous best and new distance.
+    update_needed = True
+    if cf.pnn.start_from is not None: # skips this comparison if I was in a fresh_start
+        new_distance = np_distance(result, cf.pnn.p_target)
+        if new_distance > cf.pnn.distances[i]:
+            update_needed = False
+            print("Moving on. Distance didn't improve from {}.".format(cf.pnn.distances[i]))
+        else:
+            print("Distance imporved! This distance:", new_distance)
+    else:
+        print("This distance:", np_distance(result, cf.pnn.p_target))
+
+    if update_needed:
+        # Update results
+        model.save(cf.pnn.savebestpath)
+        cf.pnn.distributions[i,:] = result
+        cf.pnn.distances[i] = np_distance(result, cf.pnn.p_target)
+        cf.pnn.euclidean_distances[i] = np_euclidean_distance(result, cf.pnn.p_target)
+        np.save("./saved_results/target_distributions.npy",cf.pnn.target_distributions)
+        np.save("./saved_results/distributions.npy",cf.pnn.distributions)
+        np.save("./saved_results/distances.npy",cf.pnn.distances)
+        np.save("./saved_results/euclidean_distances.npy",cf.pnn.euclidean_distances)
+
+    # Plot graphs only if update is needed or at the end of the sweep (in case none of them were updated.)
+    if update_needed or i==0:
+        # Plot distances
+        plt.clf()
+        plt.title("D(p_target,p_machine)")
+        plt.plot(cf.pnn.target_ids,cf.pnn.euclidean_distances, 'ro')
+        if i!=0 and cf.pnn.sweep_id==0:
+            plt.ylim(bottom=0,top = np.sort(np.unique(cf.pnn.euclidean_distances))[-2]*1.2)
+        else:
+            plt.ylim(bottom=0,top = np.sort(np.unique(cf.pnn.euclidean_distances))[-1]*1.2)
+        plt.savefig("./figs_training_sweeps/sweep"+str(cf.pnn.sweep_id)+".png")
+
+        # Plot distributions
+        plt.clf()
+        plt.plot(cf.pnn.p_target,'ro',markersize=5)
+        plt.plot(result,'gs',alpha = 0.85,markersize=5)
+        plt.title("Target distr. (in red): {} {:.3f}".format(cf.pnn.target_distr_name, cf.pnn.target_ids[i]))
+        plt.ylim(bottom=0,top=max(cf.pnn.p_target)*1.2)
+        plt.savefig("./figs_distributions/target_"+str(i).zfill(int(np.ceil(np.log10(cf.pnn.target_ids.shape[0]))))+".png")
