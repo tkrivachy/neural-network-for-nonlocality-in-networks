@@ -10,42 +10,55 @@ import config as cf
 from targets import target_distribution_gen
 
 def build_model():
-    cf.pnn.inputsize = 3 # Number of hidden variables, e.g. alpha, beta, gamma
-    """ Build NN for triangle """
-    # Hidden variables as inputs.
-    inputTensor = Input((cf.pnn.inputsize,))
+    """ Build NN """
+    inputTensor = Input((3,))
+    group_lambda = Lambda(lambda x: x[:,:1], output_shape=((1,)))(inputTensor)
+    group_x_hidden = Lambda(lambda x: x[:,1:2], output_shape=((1,)))(inputTensor) # a input
+    group_y_hidden = Lambda(lambda x: x[:,2:3], output_shape=((1,)))(inputTensor) # c input
+    #group_x = K.squeeze(K.one_hot(K.cast(group_x_hidden,'int32'), pnn.ainputsize),axis=1)
+    #group_z = K.squeeze(K.one_hot(K.cast(group_z_hidden,'int32'), pnn.cinputsize),axis=1)
+    ais = cf.pnn.ainputsize
+    bis = cf.pnn.binputsize
+    group_x_hidden = Lambda(lambda x:K.squeeze(K.one_hot(K.cast(x,'int32'), ais),axis=1) , output_shape=((ais,)))(group_x_hidden)
+    group_y_hidden = Lambda(lambda x:K.squeeze(K.one_hot(K.cast(x,'int32'), bis),axis=1) , output_shape=((bis,)))(group_y_hidden)
+    #group_x_hidden = K.squeeze(K.one_hot(K.cast(group_x_hidden,'int32'), pnn.ainputsize),axis=1)
+    #group_z_hidden = K.squeeze(K.one_hot(K.cast(group_z_hidden,'int32'), pnn.cinputsize),axis=1)
+    group_x = group_x_hidden
+    group_y = group_y_hidden
 
-    # Group input tensor according to whether alpha, beta or gamma hidden variable.
-    group_alpha = Lambda(lambda x: x[:,:1], output_shape=((1,)))(inputTensor)
-    group_beta = Lambda(lambda x: x[:,1:2], output_shape=((1,)))(inputTensor)
-    group_gamma = Lambda(lambda x: x[:,2:3], output_shape=((1,)))(inputTensor)
+    amean = ais/2
+    astd = np.sqrt((ais**2-1)/12)
+    bmean = bis/2
+    bstd = np.sqrt((bis**2-1)/12)
 
-    # Neural network at the sources, for pre-processing (e.g. for going from uniform distribution to non-uniform one)
-    ## Note that in the example code greek_depth is set to 0, so this part is trivial.
+    group_x_hidden = Lambda(lambda x: (x-amean)/astd , output_shape=((ais,)))(group_x_hidden)
+    group_y_hidden = Lambda(lambda x: (x-bmean)/bstd , output_shape=((bis,)))(group_y_hidden)
+    #group_x_hidden = (group_x_hidden - 0.5)*2
+    #group_z_hidden = (group_z_hidden - 0.5)*2
+
     for _ in range(cf.pnn.greek_depth):
-        group_alpha = Dense(cf.pnn.greek_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg)(group_alpha)
-        group_beta = Dense(cf.pnn.greek_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg)(group_beta)
-        group_gamma = Dense(cf.pnn.greek_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg)(group_gamma)
+        group_lambda = Dense(cf.pnn.greek_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg)(group_lambda)
 
-    # Route hidden variables to visibile parties Alice, Bob and Charlie
-    group_a = Concatenate()([group_beta,group_gamma])
-    group_b = Concatenate()([group_gamma,group_alpha])
-    group_c = Concatenate()([group_alpha,group_beta])
+    #group_x_hidden = (group_x_hidden - 1.5)/1.11803398875
+    #group_z_hidden = (group_z_hidden - 1.5)/1.11803398875
+    group_a = Concatenate()([group_lambda,group_x_hidden])
+    group_b = Concatenate()([group_lambda,group_y_hidden])
 
-    # Neural network at the parties Alice, Bob and Charlie.
     ## Note: increasing the variance of the initialization seemed to help in some cases, especially when the number if outputs per party is 4 or more.
-    kernel_init = tf.keras.initializers.VarianceScaling(scale=cf.pnn.weight_init_scaling, mode='fan_in', distribution='truncated_normal', seed=None)
+    #kernel_init = tf.keras.initializers.VarianceScaling(scale=cf.pnn.weight_init_scaling, mode='fan_in', distribution='truncated_normal', seed=None)
+    """"""""""""""""""""""""""""""
+    from tensorflow.keras.initializers import VarianceScaling
+    kernel_init = VarianceScaling(scale=cf.pnn.weight_init_scaling, mode='fan_in', distribution='truncated_normal', seed=None)
+    """"""""""""""""""""""""""""""
     for _ in range(cf.pnn.latin_depth):
         group_a = Dense(cf.pnn.latin_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg, kernel_initializer = kernel_init)(group_a)
         group_b = Dense(cf.pnn.latin_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg, kernel_initializer = kernel_init)(group_b)
-        group_c = Dense(cf.pnn.latin_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg, kernel_initializer = kernel_init)(group_c)
 
-    # Apply final softmax layer
     group_a = Dense(cf.pnn.a_outputsize,activation=cf.pnn.activ2, kernel_regularizer=cf.pnn.kernel_reg)(group_a)
     group_b = Dense(cf.pnn.b_outputsize,activation=cf.pnn.activ2, kernel_regularizer=cf.pnn.kernel_reg)(group_b)
-    group_c = Dense(cf.pnn.c_outputsize,activation=cf.pnn.activ2, kernel_regularizer=cf.pnn.kernel_reg)(group_c)
 
-    outputTensor = Concatenate()([group_a,group_b,group_c])
+    #outputTensor = Concatenate()([group_a,group_b,group_c,a_input,c_input])
+    outputTensor = Concatenate()([group_x,group_y,group_a,group_b])
 
     model = Model(inputTensor,outputTensor)
     return model
@@ -55,7 +68,13 @@ def np_euclidean_distance(p,q=0):
     return np.sqrt(np.sum(np.square(p-q),axis=-1))
 
 def np_distance(p,q=0):
-    """ Same as the distance used in the loss function, just written for numpy arrays."""
+    """ Same as the distance used in the loss function, just written for numpy arrays.
+    Implemented losses:
+        l2: Euclidean distance (~Mean Squared Error)
+        l1: L1 distance (~Mean Absolute Error)
+        kl: Kullback-Liebler divergence (relative entropy)
+        js: Jensen-Shannon divergence (see https://arxiv.org/abs/1803.08823 pg. 94-95). Thanks to Askery A. Canabarro for the recommendation.
+    """
     if cf.pnn.loss.lower() == 'l2':
         return np.sum(np.square(p-q),axis=-1)
     elif cf.pnn.loss.lower() == 'l1':
@@ -71,7 +90,13 @@ def np_distance(p,q=0):
         return np.sum(p * np.log(np.divide(p,avg)), axis=-1) + np.sum(q * np.log(np.divide(q,avg)), axis=-1)
 
 def keras_distance(p,q):
-    """ Distance used in loss function. """
+    """ Distance used in loss function.
+    Implemented losses:
+        l2: Euclidean distance (~Mean Squared Error)
+        l1: L1 distance (~Mean Absolute Error)
+        kl: Kullback-Liebler divergence (relative entropy)
+        js: Jensen-Shannon divergence (see https://arxiv.org/abs/1803.08823 pg. 94-95). Thanks to Askery A. Canabarro for the recommendation.
+    """
     if cf.pnn.loss.lower() == 'l2':
         return K.sum(K.square(p-q),axis=-1)
     elif cf.pnn.loss.lower() == 'l1':
@@ -86,23 +111,23 @@ def keras_distance(p,q):
         avg = (p+q)/2
         return K.sum(p * K.log(p / avg), axis=-1) + K.sum(q * K.log(q / avg), axis=-1)
 
-
 def customLoss_distr(y_pred):
-    """ Converts the output of the neural network to a probability vector.
-    That is from a shape of (batch_size, a_outputsize + b_outputsize + c_outputsize) to a shape of (a_outputsize * b_outputsize * c_outputsize,)
-    """
-    a_probs = y_pred[:,0:cf.pnn.a_outputsize]
-    b_probs = y_pred[:,cf.pnn.a_outputsize : cf.pnn.a_outputsize + cf.pnn.b_outputsize]
-    c_probs = y_pred[:,cf.pnn.a_outputsize + cf.pnn.b_outputsize : cf.pnn.a_outputsize + cf.pnn.b_outputsize + cf.pnn.c_outputsize]
+    x_probs = y_pred[:,0:cf.pnn.ainputsize]
+    y_probs = y_pred[:,cf.pnn.ainputsize:cf.pnn.ainputsize+cf.pnn.binputsize]
+    temp_start = cf.pnn.ainputsize+cf.pnn.binputsize
+    a_probs = y_pred[:,temp_start:temp_start + cf.pnn.a_outputsize]
+    b_probs = y_pred[:,temp_start +cf.pnn.a_outputsize:temp_start +cf.pnn.a_outputsize + cf.pnn.b_outputsize]
 
-    a_probs = K.reshape(a_probs,(-1,cf.pnn.a_outputsize,1,1))
-    b_probs = K.reshape(b_probs,(-1,1,cf.pnn.b_outputsize,1))
-    c_probs = K.reshape(c_probs,(-1,1,1,cf.pnn.c_outputsize))
+    x_probs = K.reshape(x_probs,(-1,cf.pnn.ainputsize,1,1,1))
+    y_probs = K.reshape(y_probs,(-1,1,cf.pnn.binputsize,1,1))
+    a_probs = K.reshape(a_probs,(-1,1,1,cf.pnn.a_outputsize,1))
+    b_probs = K.reshape(b_probs,(-1,1,1,1,cf.pnn.b_outputsize))
 
-    probs = a_probs*b_probs*c_probs
+    probs = x_probs*y_probs*a_probs*b_probs
     probs = K.mean(probs,axis=0)
     probs = K.flatten(probs)
     return probs
+
 
 def customLoss(y_true,y_pred):
     """ Custom loss function."""
@@ -115,12 +140,18 @@ training_sigma = 0.28867513459 #= np.sqrt(1/12)
 
 def generate_xy_batch():
     while True:
-        temp = np.divide((np.random.random((cf.pnn.batch_size, cf.pnn.inputsize)) - training_mean),training_sigma)
+        temp = (np.random.random((cf.pnn.batch_size, 1)) - training_mean)/training_sigma
+        ainputs = np.random.choice(cf.pnn.ainputsize, (cf.pnn.batch_size,1))
+        binputs = np.random.choice(cf.pnn.binputsize, (cf.pnn.batch_size,1))
+        temp = np.concatenate((temp, ainputs, binputs), axis=1)
         yield (temp, cf.pnn.y_true)
 
 def generate_x_test():
     while True:
-        temp = np.divide((np.random.random((cf.pnn.batch_size_test, cf.pnn.inputsize)) - training_mean),training_sigma)
+        temp = (np.random.random((cf.pnn.batch_size,1)) - training_mean)/training_sigma
+        ainputs = np.random.choice(cf.pnn.ainputsize, (cf.pnn.batch_size,1))
+        binputs = np.random.choice(cf.pnn.binputsize, (cf.pnn.batch_size,1))
+        temp = np.concatenate((temp, ainputs, binputs), axis=1)
         yield temp
 
 def single_evaluation(model):
@@ -223,94 +254,3 @@ def update_results(model_new,i):
     plt.title("Target distr. (in red): {} {:.3f}".format(cf.pnn.target_distr_name, cf.pnn.target_ids[i]))
     plt.ylim(bottom=0,top=max(cf.pnn.p_target)*1.2)
     plt.savefig("./figs_distributions/target_"+str(i).zfill(int(np.ceil(np.log10(cf.pnn.target_ids.shape[0]))))+".png")
-
-    # Plot strategies (only turn on if you're really interested, since it takes quite a bit of time to update in each step!)
-    plot_strategies(i)
-
-def plot_strategies(i):
-    sample_size = 4000 #how many hidden variable triples to sample from
-    random_sample_size = 5 #for each hidden variable triple, how many times to sample from strategies.
-    alpha_value = 0.25# 3/random_sample_size #opacity of dots. 0.1 or 0.25 make for nice paintings.
-    markersize = 5000/np.sqrt(sample_size)
-
-    modelpath = './saved_models/best_'+str(i).zfill(int(np.ceil(np.log10(cf.pnn.target_distributions.shape[0]))))+'.hdf5'
-
-    input_data = generate_x_test()
-    inputs = next(input_data)
-    while inputs.shape[0] < sample_size:
-        inputs = np.concatenate((inputs, next(input_data)),axis=0)
-    inputs = inputs[:sample_size,:]
-
-    K.clear_session()
-    model = load_model(modelpath,custom_objects={'customLoss': customLoss})
-    y = model.predict(inputs)
-
-    y_a = y[:,0:cf.pnn.a_outputsize]
-    y_b = y[:,cf.pnn.a_outputsize:cf.pnn.a_outputsize+cf.pnn.b_outputsize]
-    y_c = y[:,cf.pnn.a_outputsize+cf.pnn.b_outputsize:cf.pnn.a_outputsize+cf.pnn.b_outputsize+cf.pnn.c_outputsize]
-
-    y_a = np.array([np.random.choice(np.arange(cf.pnn.a_outputsize),p=y_a[j,:], size = random_sample_size) for j in range(y_a.shape[0])]).reshape(random_sample_size*sample_size)
-    y_b = np.array([np.random.choice(np.arange(cf.pnn.b_outputsize),p=y_b[j,:], size = random_sample_size) for j in range(y_b.shape[0])]).reshape(random_sample_size*sample_size)
-    y_c = np.array([np.random.choice(np.arange(cf.pnn.c_outputsize),p=y_c[j,:], size = random_sample_size) for j in range(y_c.shape[0])]).reshape(random_sample_size*sample_size)
-
-    training_mean = 0.5
-    training_sigma = np.sqrt(1/12)
-    inputs = inputs* training_sigma + training_mean
-    # Tile and reshape since we sampled random_sample_size times from each input.
-    inputs = np.array(np.array([np.tile(inputs[i,:],(random_sample_size,1)) for i in range(inputs.shape[0])])).reshape(random_sample_size*sample_size,3)
-
-    alphas = inputs[:,0]
-    betas = inputs[:,1]
-    gammas = inputs[:,2]
-    inputs_a = np.stack((betas,gammas)).transpose()
-    inputs_b = np.stack((alphas,gammas)).transpose()
-    inputs_c = np.stack((alphas,betas)).transpose()
-
-    colordict = {0:'red',1:'green',2:'blue',3:'orange'}
-    colors_alice = [colordict[i] for i in y_a]
-    colors_bob = [colordict[i] for i in y_b]
-    colors_charlie = [colordict[i] for i in y_c]
-
-    from matplotlib.lines import Line2D
-    legend_elements = [Line2D([0], [0], marker='o', color='w', label='0',
-                              markerfacecolor='red', markersize=8),
-                        Line2D([0], [0], marker='o', color='w', label='1',
-                                markerfacecolor='green', markersize=8),
-                        Line2D([0], [0], marker='o', color='w', label='2',
-                                markerfacecolor='blue', markersize=8),
-                        Line2D([0], [0], marker='o', color='w', label='3',
-                                markerfacecolor='orange', markersize=8)]
-
-    fig, axes = plt.subplots(2, 2, figsize=(12,12))
-    plt.subplot(2,2,1)
-    plt.scatter(inputs_a[:,0],inputs_a[:,1], color = colors_alice, alpha=alpha_value, s = markersize)
-    plt.gca().invert_yaxis()
-    plt.title('Response of Alice to her inputs.')
-    plt.xlabel(r'$\beta$')
-    plt.ylabel(r'$\gamma$')
-
-    plt.subplot(2,2,2)
-    plt.scatter(inputs_b[:,0],inputs_b[:,1], color = colors_bob, alpha=alpha_value, s = markersize)
-    plt.gca().invert_yaxis()
-    plt.title('Response of Bob to his inputs.')
-    plt.xlabel(r'$\alpha$')
-    plt.ylabel(r'$\gamma$')
-
-    plt.subplot(2,2,3)
-    plt.scatter(inputs_c[:,1],inputs_c[:,0], color = colors_charlie, alpha=alpha_value, s = markersize)
-    plt.gca().invert_yaxis()
-    plt.title('Response of Charlie to his inputs.')
-    plt.xlabel(r'$\beta$')
-    plt.ylabel(r'$\alpha$')
-
-    plt.subplot(2,2,4)
-    plt.plot(cf.pnn.target_distributions[i,:],'ro',markersize=5)
-    plt.plot(cf.pnn.distributions[i,:],'gs',alpha = 0.85,markersize=5)
-    plt.title('Target (red) and learned (green) distributions')
-    plt.xlabel('outcome')
-    plt.ylabel('probability of outcome')
-
-    fig.suptitle(cf.pnn.target_distr_name +', distribution no. '+str(i), fontsize = 14)
-    #fig.legend(handles=legend_elements, loc='lower right',bbox_to_anchor = (0.75,0.25))
-    fig.legend(handles=legend_elements, loc='upper right')
-    plt.savefig('./figs_strategies/strat_'+str(i))

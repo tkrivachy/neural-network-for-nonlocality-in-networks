@@ -12,28 +12,29 @@ class Config:
 
         # Define target distributions to sweep through.
         ## Set up custom target distribution generator function
-        self.target_distr_name = "Fritz-visibility" # check targets.py for possible names
-        self.param_range = np.linspace(0.5, 1, 10)
+        self.target_distr_name = "CHSH" # check targets.py for possible names
+        self.param_range = np.linspace(0, 1, 10)
         self.which_param = 2 # Specifies whether we want to sweep through param1, a distribution parameter (not relevant sometimes, e.g. for elegant distr.), or param2, the noise parameter.
         self.other_param = 1 # Fixes other parameter, which we don't sweep through.
 
         ## Set target distributions and their ids
         self.target_distributions = target_distribution_gen_all(self.target_distr_name,  self.param_range, self.which_param, self.other_param)
         self.target_ids = self.param_range
-        self.a_outputsize = 4 # Number of output bits for Alice
-        self.b_outputsize = 4 # Number of output bits for Bob
-        self.c_outputsize = 4 # Number of output bits for Charlie
+        self.ainputsize = 2 # Number of inputs for Alice
+        self.binputsize = 2 # Number of inputs for Bob
+        self.a_outputsize = 2 # Number of outputs for Alice
+        self.b_outputsize = 2 # Number of outputs for Bob
 
         # Neural network parameters
         self.latin_depth = 3
-        self.latin_width = 16
+        self.latin_width = 8
 
         # Training procedure parameters
-        self.batch_size = 6000
-        self.no_of_batches = 10000 # How many batches to go through during training.
+        self.batch_size = 5000
+        self.no_of_batches = 5000 # How many batches to go through during training.
         self.weight_init_scaling = 2.#10. # default is 1. Set to larger values to get more variance in initial weights.
         self.optimizer = 'adadelta'
-        self.lr = 2
+        self.lr = 0.5
         self.decay = 0.001
         self.momentum = 0.25
         self.loss = 'kl'
@@ -50,7 +51,7 @@ class Config:
         self.change_batch_size(self.batch_size) #updates test batch size
         self.greek_depth = 0 # set to 0 if trivial neural networks at sources
         self.greek_width = 1
-        self.activ = 'tanh' # activation for most of NN
+        self.activ = 'relu' # activation for most of NN
         self.activ2 = 'softmax' # activation for last dense layer
         self.kernel_reg = None
 

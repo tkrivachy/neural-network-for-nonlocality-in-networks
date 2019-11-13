@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import config as cf
 from targets import target_distribution_gen_all
-from utils_nn import np_distance, np_euclidean_distance, single_run, single_evaluation
+from utils_nn import np_distance, np_euclidean_distance, single_run, single_evaluation, plot_strategies
 
 def single_sweep_training():
     """ Goes through all target distributions in cf.pnn.target_distributions once with the config values given in config.py """
@@ -30,8 +30,9 @@ def single_sweep_training():
 
         # Plot distances
         plt.clf()
-        plt.title("D(p_target,p_machine)")
+        fig = plt.figure(figsize=(6.4, 4.8))
         plt.plot(cf.pnn.target_ids,cf.pnn.euclidean_distances, 'ro')
+        plt.title("D(p_target,p_machine)")
         if i!=0:
             plt.ylim(bottom=0,top = np.sort(np.unique(cf.pnn.euclidean_distances))[-2]*1.2)
         else:
@@ -40,16 +41,19 @@ def single_sweep_training():
 
         # Plot distributions
         plt.clf()
+        plt.style.use('default')
         plt.plot(cf.pnn.p_target,'ro',markersize=5)
         plt.plot(result,'gs',alpha = 0.85,markersize=5)
         plt.title("Target distr.: {} {:.3f}".format(cf.pnn.target_distr_name, cf.pnn.target_ids[i]))
         plt.ylim(bottom=0,top=max(cf.pnn.p_target)*1.2)
         plt.savefig("./figs_distributions/target_"+str(i).zfill(int(np.ceil(np.log10(cf.pnn.target_distributions.shape[0]))))+".png")
 
+        # Plots the strategies (comment out if you're not particularly interested - it's a bit slow.)
+        plot_strategies(i)
 
 if __name__ == '__main__':
     # Create directories for saving stuff
-    for dir in ['saved_models', 'saved_results', 'saved_configs', 'figs_distributions', 'figs_training_sweeps']:
+    for dir in ['saved_models', 'saved_results', 'saved_configs', 'figs_distributions', 'figs_training_sweeps','figs_strategies']:
         if not os.path.exists(dir):
             os.makedirs(dir)
     # Set up the Parameters of the Neural Network (i.e. the config object)
