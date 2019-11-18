@@ -5,6 +5,8 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.models import Model, load_model
 from tensorflow.keras.layers import Dense, Input, Concatenate, Lambda
 from scipy.stats import entropy
+from tensorflow.keras.initializers import VarianceScaling
+
 
 import config as cf
 from targets import target_distribution_gen
@@ -15,14 +17,13 @@ def build_model():
     group_lambda = Lambda(lambda x: x[:,:1], output_shape=((1,)))(inputTensor)
     group_x_hidden = Lambda(lambda x: x[:,1:2], output_shape=((1,)))(inputTensor) # a input
     group_y_hidden = Lambda(lambda x: x[:,2:3], output_shape=((1,)))(inputTensor) # c input
-    #group_x = K.squeeze(K.one_hot(K.cast(group_x_hidden,'int32'), pnn.ainputsize),axis=1)
-    #group_z = K.squeeze(K.one_hot(K.cast(group_z_hidden,'int32'), pnn.cinputsize),axis=1)
+
     ais = cf.pnn.ainputsize
     bis = cf.pnn.binputsize
+
     group_x_hidden = Lambda(lambda x:K.squeeze(K.one_hot(K.cast(x,'int32'), ais),axis=1) , output_shape=((ais,)))(group_x_hidden)
     group_y_hidden = Lambda(lambda x:K.squeeze(K.one_hot(K.cast(x,'int32'), bis),axis=1) , output_shape=((bis,)))(group_y_hidden)
-    #group_x_hidden = K.squeeze(K.one_hot(K.cast(group_x_hidden,'int32'), pnn.ainputsize),axis=1)
-    #group_z_hidden = K.squeeze(K.one_hot(K.cast(group_z_hidden,'int32'), pnn.cinputsize),axis=1)
+
     group_x = group_x_hidden
     group_y = group_y_hidden
 
@@ -33,23 +34,16 @@ def build_model():
 
     group_x_hidden = Lambda(lambda x: (x-amean)/astd , output_shape=((ais,)))(group_x_hidden)
     group_y_hidden = Lambda(lambda x: (x-bmean)/bstd , output_shape=((bis,)))(group_y_hidden)
-    #group_x_hidden = (group_x_hidden - 0.5)*2
-    #group_z_hidden = (group_z_hidden - 0.5)*2
 
     for _ in range(cf.pnn.greek_depth):
         group_lambda = Dense(cf.pnn.greek_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg)(group_lambda)
 
-    #group_x_hidden = (group_x_hidden - 1.5)/1.11803398875
-    #group_z_hidden = (group_z_hidden - 1.5)/1.11803398875
     group_a = Concatenate()([group_lambda,group_x_hidden])
     group_b = Concatenate()([group_lambda,group_y_hidden])
 
     ## Note: increasing the variance of the initialization seemed to help in some cases, especially when the number if outputs per party is 4 or more.
-    #kernel_init = tf.keras.initializers.VarianceScaling(scale=cf.pnn.weight_init_scaling, mode='fan_in', distribution='truncated_normal', seed=None)
-    """"""""""""""""""""""""""""""
-    from tensorflow.keras.initializers import VarianceScaling
     kernel_init = VarianceScaling(scale=cf.pnn.weight_init_scaling, mode='fan_in', distribution='truncated_normal', seed=None)
-    """"""""""""""""""""""""""""""
+
     for _ in range(cf.pnn.latin_depth):
         group_a = Dense(cf.pnn.latin_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg, kernel_initializer = kernel_init)(group_a)
         group_b = Dense(cf.pnn.latin_width,activation=cf.pnn.activ, kernel_regularizer=cf.pnn.kernel_reg, kernel_initializer = kernel_init)(group_b)
@@ -57,7 +51,6 @@ def build_model():
     group_a = Dense(cf.pnn.a_outputsize,activation=cf.pnn.activ2, kernel_regularizer=cf.pnn.kernel_reg)(group_a)
     group_b = Dense(cf.pnn.b_outputsize,activation=cf.pnn.activ2, kernel_regularizer=cf.pnn.kernel_reg)(group_b)
 
-    #outputTensor = Concatenate()([group_a,group_b,group_c,a_input,c_input])
     outputTensor = Concatenate()([group_x,group_y,group_a,group_b])
 
     model = Model(inputTensor,outputTensor)
