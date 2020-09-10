@@ -1,5 +1,5 @@
 # Neural Network for Nonlocality in Networks
-Code for the work in: https://arxiv.org/abs/1907.10552
+Code for the work in: https://www.nature.com/articles/s41534-020-00305-x
 
 If you use this code please cite
 Tamás Kriváchy, Yu Cai, Daniel Cavalcanti, Arash Tavakoli, Nicolas Gisin, Nicolas Brunner, A neural network oracle for quantum nonlocality problems in networks, npj Quantum Inf 6, 70 (2020). Open access available at https://doi.org/10.1038/s41534-020-00305-x
