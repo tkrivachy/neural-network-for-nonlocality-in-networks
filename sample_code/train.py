@@ -58,5 +58,7 @@ if __name__ == '__main__':
             os.makedirs(dir)
     # Set up the Parameters of the Neural Network (i.e. the config object)
     cf.initialize()
+    print("SUMS")
+    print(np.sum(cf.pnn.target_distributions,axis=1))
     # Run single sweep
     single_sweep_training()

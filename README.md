@@ -2,7 +2,7 @@
 Code for the work in: https://arxiv.org/abs/1907.10552
 
 If you use this code please cite
-T. Kriváchy, Y. Cai, D. Cavalcanti, A. Tavakoli, N. Gisin, N. Brunner, A neural network oracle for quantum nonlocality problems in networks, arXiv:1907.10552
+Tamás Kriváchy, Yu Cai, Daniel Cavalcanti, Arash Tavakoli, Nicolas Gisin, Nicolas Brunner, A neural network oracle for quantum nonlocality problems in networks, npj Quantum Inf 6, 70 (2020). Open access available at https://doi.org/10.1038/s41534-020-00305-x
 
 ## Intro
 In the paper above, we describe a generative neural network to tackle the classical causal inference problem encountered in quantum network nonlocality. The neural network basically tries to learn classical/local models for a given distribution and causal structure.

@@ -20,9 +20,9 @@ class Config:
         ## Set target distributions and their ids
         self.target_distributions = target_distribution_gen_all(self.target_distr_name,  self.param_range, self.which_param, self.other_param)
         self.target_ids = self.param_range
-        self.a_outputsize = 4 # Number of output bits for Alice
-        self.b_outputsize = 4 # Number of output bits for Bob
-        self.c_outputsize = 4 # Number of output bits for Charlie
+        self.a_outputsize = 4 # Number of outputs for Alice
+        self.b_outputsize = 4 # Number of outputs for Bob
+        self.c_outputsize = 4 # Number of outputs for Charlie
 
         # Neural network parameters
         self.latin_depth = 3
