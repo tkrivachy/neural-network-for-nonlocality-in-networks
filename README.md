@@ -1,11 +1,12 @@
-# Neural Network for Nonlocality in Networks
+# LHVnet
+## AKA Neural Network for Nonlocality in Networks
 Code for the work in: https://www.nature.com/articles/s41534-020-00305-x
 
 If you use this code please cite
 Tamás Kriváchy, Yu Cai, Daniel Cavalcanti, Arash Tavakoli, Nicolas Gisin, Nicolas Brunner, A neural network oracle for quantum nonlocality problems in networks, npj Quantum Inf 6, 70 (2020). Open access available at https://doi.org/10.1038/s41534-020-00305-x
 
 ## Intro
-In the paper above, we describe a generative neural network to tackle the classical causal inference problem encountered in quantum network nonlocality. The neural network basically tries to learn classical/local models for a given distribution and causal structure.
+In the paper above, we describe a generative neural network to tackle the classical causal inference problem encountered in quantum network nonlocality. The neural network basically tries to learn classical/local (LHV) models for a given distribution and causal structure.
 
 ![Going from causal structure to generative neural network.](./triangle.png "Going from causal structure to generative neural network.")
 
