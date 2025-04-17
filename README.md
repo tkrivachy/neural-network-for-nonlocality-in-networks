@@ -5,6 +5,8 @@ Code for the work in: https://www.nature.com/articles/s41534-020-00305-x
 If you use this code please cite
 Tamás Kriváchy, Yu Cai, Daniel Cavalcanti, Arash Tavakoli, Nicolas Gisin, Nicolas Brunner, A neural network oracle for quantum nonlocality problems in networks, npj Quantum Inf 6, 70 (2020). Open access available at https://doi.org/10.1038/s41534-020-00305-x
 
+NOTE (2025): Slightly newer sample code for the triangle network can be found at https://github.com/tkrivachy/detectionloopholeLP
+
 ## Intro
 In the paper above, we describe a generative neural network to tackle the classical causal inference problem encountered in quantum network nonlocality. The neural network basically tries to learn classical/local (LHV) models for a given distribution and causal structure.
 
